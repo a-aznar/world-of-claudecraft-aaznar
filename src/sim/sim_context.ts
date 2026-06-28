@@ -40,6 +40,7 @@ import type {
   ErrorReason,
   PlayerClass,
   QuestProgress,
+  QuestState,
   SimConfig,
   SimEvent,
   Vec3,
@@ -275,6 +276,9 @@ export interface SimContextCallbacks {
   onInventoryChangedForQuests(meta: PlayerMeta): void;
   checkQuestReady(qp: QuestProgress, meta: PlayerMeta): void;
   countItem(itemId: string, pid?: number): number;
+  questState(questId: string, pid?: number): QuestState;
+  completeQuestForDev(questId: string, pid?: number): boolean;
+  completeCurrentQuestsForDev(pid?: number): number;
 
   // T1 player target selection consumes isHostileTo/isFriendlyTo/pvpController/stopFollow;
   // all already on the seam (C4a added the first two + stopFollow, C1 added pvpController)
@@ -696,6 +700,9 @@ export function createSimContext(host: SimContextHost): SimContext {
     onInventoryChangedForQuests: host.onInventoryChangedForQuests,
     checkQuestReady: host.checkQuestReady,
     countItem: host.countItem,
+    questState: host.questState,
+    completeQuestForDev: host.completeQuestForDev,
+    completeCurrentQuestsForDev: host.completeCurrentQuestsForDev,
     addEntity: host.addEntity,
     dropEntity: host.dropEntity,
     rebucket: host.rebucket,

@@ -98,7 +98,6 @@ import {
   NPCS,
   PLAYER_START,
   QUESTS,
-  questRewardItemId,
   ZONES,
   zoneAt,
 } from './data';
@@ -183,7 +182,6 @@ import {
   talentPointBudget,
 } from './progression/talents';
 import { prestige as prestigeImpl, updateRested } from './progression/xp';
-import { questFallbackGrants } from './quest_fallback';
 import { sanitizeRemovedZone1Content } from './removed_zone1_content';
 import { Rng } from './rng';
 import { createSimContext, type SimContext, type SimContextHost } from './sim_context';
@@ -210,6 +208,12 @@ import {
   onInventoryChangedForQuests,
   onMobKilledForQuests,
 } from './quests/quest_credit';
+import {
+  acceptQuestCore,
+  completeCurrentQuestsForDev,
+  completeQuestForDev,
+  turnInQuestCore,
+} from './quests/dev_quest_commands';
 import * as arenaMod from './social/arena';
 import * as duelMod from './social/duel';
 
@@ -1976,6 +1980,9 @@ export class Sim {
       onInventoryChangedForQuests: (meta) => onInventoryChangedForQuests(sim.ctx, meta),
       checkQuestReady: (qp, meta) => checkQuestReady(sim.ctx, qp, meta),
       countItem: sim.countItem.bind(sim),
+      questState: sim.questState.bind(sim),
+      completeQuestForDev: (questId, pid) => completeQuestForDev(sim.ctx, questId, pid),
+      completeCurrentQuestsForDev: (pid) => completeCurrentQuestsForDev(sim.ctx, pid),
       // I1 dungeon instancing now lives in instances/dungeons.ts; these route through
       // the same-named Sim delegates (foreign callers use this.X). lockoutNowMs is the
       // shared raid-lockout clock that stays on Sim (N1 also writes through it).
@@ -4912,21 +4919,7 @@ export class Sim {
   // can never permanently block the quest, and announces the accept. Both callers go
   // through here so the two paths cannot drift (notably this re-grant).
   private finalizeQuestAccept(questId: string, quest: QuestDef, meta: PlayerMeta): void {
-    meta.questLog.set(questId, { questId, counts: quest.objectives.map(() => 0), state: 'active' });
-    for (const itemId of questFallbackGrants(
-      quest,
-      (id) => this.countItem(id, meta.entityId) > 0,
-    )) {
-      this.addItem(itemId, 1, meta.entityId);
-    }
-    this.emit({ type: 'questAccepted', questId, pid: meta.entityId });
-    this.emit({
-      type: 'log',
-      text: `Quest accepted: ${quest.name}`,
-      color: '#ff0',
-      pid: meta.entityId,
-    });
-    this.ctx.onInventoryChangedForQuests(meta);
+    acceptQuestCore(this.ctx, questId, quest, meta);
   }
 
   acceptQuest(questId: string, pid?: number): void {
@@ -5019,32 +5012,15 @@ export class Sim {
       return;
     }
 
-    for (const obj of quest.objectives) {
-      if (obj.type === 'collect' && obj.itemId)
-        this.removeItem(obj.itemId, obj.count, meta.entityId);
-    }
-    qp.state = 'done';
-    meta.questLog.delete(questId);
-    meta.questsDone.add(questId);
-    meta.counters.questsCompleted++;
-    if (quest.copperReward > 0) {
-      meta.copper += quest.copperReward;
-      this.emit({
-        type: 'loot',
-        text: `You receive ${formatMoney(quest.copperReward)}.`,
-        pid: meta.entityId,
-      });
-    }
-    const rewardItem = questRewardItemId(quest, meta.cls);
-    if (rewardItem) this.addItem(rewardItem, 1, meta.entityId);
-    this.grantXp(quest.xpReward, meta);
-    this.emit({ type: 'questDone', questId, pid: meta.entityId });
-    this.emit({
-      type: 'log',
-      text: `Quest completed: ${quest.name}`,
-      color: '#ff0',
-      pid: meta.entityId,
-    });
+    turnInQuestCore(this.ctx, questId, quest, meta);
+  }
+
+  completeQuestForDev(questId: string, pid?: number): boolean {
+    return completeQuestForDev(this.ctx, questId, pid);
+  }
+
+  completeCurrentQuestsForDev(pid?: number): number {
+    return completeCurrentQuestsForDev(this.ctx, pid);
   }
 
   // No-op in offline mode
