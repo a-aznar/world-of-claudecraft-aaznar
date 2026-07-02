@@ -419,7 +419,8 @@ function buildHarnesses(shape: WorldShape, facet: PainterHostWriters): PainterHa
     const desc: UnitFrameDescriptor = {
       present: true,
       hpFrac: 0.5,
-      hpText: '300 / 600',
+      hpText: '300/600',
+      showAbsorbText: true,
       resourceKind: 'mana',
       resFrac: 0.8,
       resText: '80 / 100',

@@ -6,19 +6,50 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 import { browserslistToTargets } from 'lightningcss';
 import { defineConfig } from 'vite';
-import { loadBrowserslistFloors } from './scripts/browserslist_targets.mjs';
 // Untyped zero-dep build helper (same convention as the other scripts/*.mjs tools).
 // vite.config.ts is outside tsconfig `include`, so this import is never type-checked.
 import { templateModulepreload } from './scripts/i18n_modulepreload.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 
+const BROWSER_IDS: Record<string, string> = {
+  chrome: 'chrome',
+  firefox: 'firefox',
+  ff: 'firefox',
+  safari: 'safari',
+  ios: 'ios_saf',
+  ios_saf: 'ios_saf',
+};
+
+function parseBrowserslistFloors(text: string): string[] {
+  const floors: string[] = [];
+  for (const physicalLine of text.split('\n')) {
+    const commentAt = physicalLine.indexOf('#');
+    const code = commentAt >= 0 ? physicalLine.slice(0, commentAt) : physicalLine;
+    for (const raw of code.split(',')) {
+      const entry = raw.trim();
+      if (!entry) continue;
+      const match = entry.match(/^([A-Za-z_]+)\s*>=\s*([0-9]+(?:\.[0-9]+)*)$/);
+      if (!match) {
+        throw new Error(
+          `Unsupported .browserslistrc entry (only "Browser >= X" floors are allowed): ${entry}`,
+        );
+      }
+      const id = BROWSER_IDS[match[1].toLowerCase()];
+      if (!id) throw new Error(`Unknown browser in .browserslistrc: ${match[1]}`);
+      floors.push(`${id} ${match[2]}`);
+    }
+  }
+  if (floors.length === 0) throw new Error('.browserslistrc defined no browser floors');
+  return floors;
+}
+
 // Lightning CSS engine targets, derived from .browserslistrc (the single source of
 // the floor) via the zero-dep parser, never a hand-typed object. Drives both the
 // CSS transform and the minifier below, so the floor governs which prefixes and
 // fallbacks survive minification (for example the -webkit-backdrop-filter twin).
 const cssTargets = browserslistToTargets(
-  loadBrowserslistFloors(fileURLToPath(new URL('.browserslistrc', import.meta.url))),
+  parseBrowserslistFloors(readFileSync(new URL('.browserslistrc', import.meta.url), 'utf8')),
 );
 
 // `#bot-detector` → the private detector if its clone is present, else the no-op

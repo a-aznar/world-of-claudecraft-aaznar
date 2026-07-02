@@ -54,7 +54,9 @@ export function partyFrameSignature(
       continue;
     }
     const oor = !m.dead && Math.hypot(m.x - playerPos.x, m.z - playerPos.z) > rangeYd;
-    sig += `${m.pid}:${m.group}:${m.hp}/${m.mhp}:${m.res}:${m.dead}:${m.inCombat}:${oor ? 1 : 0}:${m.level}|`;
+    sig +=
+      `${m.pid}:${m.group}:${m.hp}/${m.mhp}:${m.absorb}:${m.res}:` +
+      `${m.dead}:${m.inCombat}:${oor ? 1 : 0}:${m.level}|`;
   }
   return `${sig}L${info.leader}:R${info.raid ? 1 : 0}:G${myGroup}`;
 }

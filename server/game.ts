@@ -3154,6 +3154,11 @@ export class GameServer {
                 level: e.level,
                 hp: e.hp,
                 mhp: e.maxHp,
+                absorb: e.auras.reduce(
+                  (sum, aura) =>
+                    sum + (aura.kind === 'absorb' ? Math.max(0, aura.value) : 0),
+                  0,
+                ),
                 res: Math.round(e.resource),
                 mres: e.maxResource,
                 rtype: e.resourceType,

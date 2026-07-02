@@ -222,7 +222,7 @@ export class PartyFramesPainter {
         levelText: String(m.level),
         name: m.name,
         portraitKey: `${PARTY_CREST_KEY_PREFIX}${m.cls}`,
-        absorb: null,
+        absorb: { hp: m.hp, maxHp: m.mhp, total: m.absorb },
         dead: !!m.dead,
         outOfRange: m.oor,
       }),

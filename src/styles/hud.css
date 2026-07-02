@@ -634,7 +634,10 @@
      translucent segment laid over the health bar, extending past current health. */
   .bar-absorb {
     position: absolute;
-    inset: 0;
+    left: var(--absorb-start, 0%);
+    top: 0;
+    bottom: 0;
+    right: auto;
     width: 100%;
     transform-origin: left;
     transform: scaleX(0);

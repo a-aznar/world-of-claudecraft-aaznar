@@ -101,7 +101,8 @@ function targetDescriptor(e: Entity): UnitFrameDescriptor {
   return {
     present: true,
     hpFrac: t.hp / Math.max(1, t.maxHp),
-    hpText: t.dead ? 'Dead' : `${t.hp} / ${t.maxHp}`,
+    hpText: t.dead ? 'Dead' : `${t.hp}/${t.maxHp}`,
+    showAbsorbText: !t.dead,
     resourceKind: 'none',
     resFrac: 0,
     resText: '',
@@ -134,6 +135,7 @@ describe('target frame: Sim-vs-ClientWorld parity', () => {
     // the whole view is identical across hosts.
     expect(fromClient).toEqual(fromSim);
     expect(fromSim.levelText).toBe(BOSS_SKULL_GLYPH); // boss skull, not a number
+    expect(fromSim.hpText).toBe('420/600 (90)');
     expect(fromSim.resClass).toBe('none'); // a target has no resource bar
     // the hostile name color is a pure function of the mirrored `hostile` field:
     expect(targetNameColor(simTarget())).toBe(targetNameColor(clientTarget()));
